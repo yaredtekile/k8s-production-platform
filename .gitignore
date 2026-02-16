@@ -1,0 +1,50 @@
+#################################
+# Terraform
+#################################
+
+# Local Terraform state
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+
+# Sensitive variable files
+*.tfvars
+*.tfvars.json
+
+# CLI configuration files
+.terraformrc
+terraform.rc
+
+#################################
+# SSH Keys
+#################################
+
+# Never commit private keys
+*.pem
+*.key
+id_rsa*
+id_ed25519*
+k3s_aws
+
+#################################
+# OS / Editor Junk
+#################################
+
+# macOS
+.DS_Store
+
+# Linux
+*~
+
+# VS Code
+.vscode/
+
+# JetBrains
+.idea/
+
+#################################
+# Logs
+#################################
+
+*.log
