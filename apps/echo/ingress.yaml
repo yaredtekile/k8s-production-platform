@@ -4,11 +4,16 @@ metadata:
   name: echo
   namespace: dev
   annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
+    cert-manager.io/cluster-issuer: letsencrypt-prod
 spec:
   ingressClassName: nginx
+  tls:
+    - hosts:
+        - echo.yared.site
+      secretName: echo-tls
   rules:
-    - http:
+    - host: echo.yared.site
+      http:
         paths:
           - path: /
             pathType: Prefix
