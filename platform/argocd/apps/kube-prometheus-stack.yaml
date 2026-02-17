@@ -26,6 +26,14 @@ spec:
     server: https://kubernetes.default.svc
     namespace: monitoring
 
+  ignoreDifferences:
+    - group: ""
+      kind: Secret
+      namespace: monitoring
+      name: kube-prometheus-stack-grafana
+      jsonPointers:
+        - /data/admin-password
+
   syncPolicy:
     automated:
       prune: true
