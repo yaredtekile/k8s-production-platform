@@ -16,39 +16,42 @@ grafana:
       memory: 512Mi
 
 prometheus:
+  enabled: true
   prometheusSpec:
-    retention: 10d
+    retention: 3d
+    resources:
+      requests:
+        cpu: 100m
+        memory: 400Mi
+      limits:
+        cpu: 500m
+        memory: 900Mi
     storageSpec:
       volumeClaimTemplate:
         spec:
           accessModes: ["ReadWriteOnce"]
           resources:
             requests:
-              storage: 10Gi
-    resources:
-      requests:
-        cpu: 150m
-        memory: 600Mi
-      limits:
-        cpu: 600m
-        memory: 1400Mi
+              storage: 8Gi
 
 alertmanager:
+  enabled: true
   alertmanagerSpec:
+    resources:
+      requests:
+        cpu: 20m
+        memory: 64Mi
+      limits:
+        cpu: 150m
+        memory: 200Mi
     storage:
       volumeClaimTemplate:
         spec:
           accessModes: ["ReadWriteOnce"]
           resources:
             requests:
-              storage: 2Gi
-    resources:
-      requests:
-        cpu: 20m
-        memory: 64Mi
-      limits:
-        cpu: 200m
-        memory: 256Mi
+              storage: 1Gi
+
 
 kubeStateMetrics:
   resources:
