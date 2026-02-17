@@ -3,7 +3,6 @@
 
 grafana:
   enabled: true
-  adminPassword: "CHANGE_ME_AFTER_INSTALL"
   persistence:
     enabled: true
     size: 5Gi
