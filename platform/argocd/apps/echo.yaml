@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: echo
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: git@github.com:yaredtekile/k8s-production-platform.git
+    targetRevision: HEAD
+    path: apps/echo
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: dev
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
