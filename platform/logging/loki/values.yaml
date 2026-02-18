@@ -5,7 +5,7 @@
 
 loki:
   auth_enabled: false
-  
+
   # Simple local filesystem storage (no S3, no buckets)
   commonConfig:
     replication_factor: 1
@@ -61,4 +61,13 @@ monitoring:
   serviceMonitor:
     enabled: false
   rules:
+    enabled: false
+  chunksCache:
+    enabled: false
+
+  resultsCache:
+    enabled: false
+
+  # Optional: disable canary (saves a pod)
+  lokiCanary:
     enabled: false
