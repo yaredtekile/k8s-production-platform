@@ -1,12 +1,13 @@
 # Loki (lightweight, single-node) for K3s on small instances
-# - SingleBinary mode (simple)
-# - No persistence for now (easy + low resource); we can enable later
-# - Disable heavy/HA components
+# - SingleBinary mode
+# - Local filesystem storage (no S3)
+# - Disable caches + canary to save RAM
+# - No persistence for now (easy); enable later once stable
 
 loki:
   auth_enabled: false
 
-  # Simple local filesystem storage (no S3, no buckets)
+  # Single node => no replication needed
   commonConfig:
     replication_factor: 1
 
@@ -36,9 +37,10 @@ singleBinary:
       memory: 768Mi
 
 # No persistence (for now). Turn on later once stable.
-# singleBinary.persistence:
-#   enabled: true
-#   size: 10Gi
+# singleBinary:
+#   persistence:
+#     enabled: true
+#     size: 10Gi
 
 # Avoid deploying extra microservices
 read:
@@ -56,18 +58,19 @@ service:
 gateway:
   enabled: false
 
-# Disable monitoring rules/service monitors for now (we can enable later)
+# Disable caches (these create memcached StatefulSets that kill small nodes)
+chunksCache:
+  enabled: false
+resultsCache:
+  enabled: false
+
+# Optional: disable canary (saves a pod)
+lokiCanary:
+  enabled: false
+
+# Disable monitoring resources for now (optional)
 monitoring:
   serviceMonitor:
     enabled: false
   rules:
-    enabled: false
-  chunksCache:
-    enabled: false
-
-  resultsCache:
-    enabled: false
-
-  # Optional: disable canary (saves a pod)
-  lokiCanary:
     enabled: false
