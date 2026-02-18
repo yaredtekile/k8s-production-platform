@@ -13,7 +13,10 @@ grafana:
     limits:
       cpu: 300m
       memory: 512Mi
-
+  sidecar:
+    datasources:
+      enabled: true
+      
 prometheus:
   enabled: true
   prometheusSpec:
