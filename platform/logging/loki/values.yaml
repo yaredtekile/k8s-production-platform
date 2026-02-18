@@ -1,13 +1,15 @@
-# Loki (lightweight, single-node) for K3s on small instances
-# - SingleBinary mode
-# - Local filesystem storage (no S3)
-# - Disable caches + canary to save RAM
-# - No persistence for now (easy); enable later once stable
+# Loki - production-ish defaults for single-node K3s
+# - SingleBinary
+# - filesystem storage (local disk)
+# - persistence ON
+# - retention ON (via compactor)
+# - memcached caches OFF (too heavy for small nodes)
+
+deploymentMode: SingleBinary
 
 loki:
   auth_enabled: false
 
-  # Single node => no replication needed
   commonConfig:
     replication_factor: 1
 
@@ -24,25 +26,38 @@ loki:
           prefix: loki_index_
           period: 24h
 
-deploymentMode: SingleBinary
+  # Keep Loki stable on small nodes
+  limits_config:
+    retention_period: 168h              # 7 days
+    ingestion_rate_mb: 4                # per-tenant rate limit
+    ingestion_burst_size_mb: 8
+    max_streams_per_user: 2000
+    max_global_streams_per_user: 5000
+    reject_old_samples: true
+    reject_old_samples_max_age: 168h
+
+  # Required for retention on filesystem
+  compactor:
+    retention_enabled: true
+    delete_request_store: filesystem
+    working_directory: /var/loki/compactor
 
 singleBinary:
   replicas: 1
+
+  persistence:
+    enabled: true
+    size: 20Gi
+
   resources:
     requests:
-      cpu: 50m
-      memory: 256Mi
+      cpu: 100m
+      memory: 512Mi
     limits:
-      cpu: 400m
-      memory: 768Mi
+      cpu: 600m
+      memory: 1500Mi
 
-# No persistence (for now). Turn on later once stable.
-# singleBinary:
-#   persistence:
-#     enabled: true
-#     size: 10Gi
-
-# Avoid deploying extra microservices
+# Don’t deploy distributed mode parts
 read:
   replicas: 0
 write:
@@ -50,28 +65,23 @@ write:
 backend:
   replicas: 0
 
-test:
-  enabled: false
-
-# Loki service is internal-only; Grafana will access it inside the cluster
 service:
   type: ClusterIP
 
-# Keep it simple
 gateway:
   enabled: false
 
-# Disable caches (these create memcached StatefulSets that kill small nodes)
+# Disable caches (these create memcached StatefulSets)
 chunksCache:
   enabled: false
 resultsCache:
   enabled: false
 
-# Optional: disable canary (saves a pod)
+# Canary: keep enabled to satisfy chart validation OR skip helm tests in Argo (see step 2)
+# If you keep it enabled, it's tiny and safe.
 lokiCanary:
-  enabled: false
+  enabled: true
 
-# Disable monitoring resources for now (optional)
 monitoring:
   serviceMonitor:
     enabled: false

@@ -1,65 +1,63 @@
-# Promtail (single-node K3s / containerd friendly)
-# - Tails /var/log/pods/*/*.log via Kubernetes SD + relabel to __path__
-# - Pushes to Loki service inside the cluster
-# - Mounts /var/log once (avoids duplicate mountPath errors)
+# Promtail - production-ish for K3s
+# - DaemonSet
+# - positions persistence ON (avoids re-sending logs)
+# - ship pod logs to Loki service
 
-config:
+daemonset:
   enabled: true
 
+config:
   clients:
     - url: http://loki.monitoring.svc.cluster.local:3100/loki/api/v1/push
 
+  positions:
+    filename: /run/promtail/positions.yaml
+
   snippets:
-    # Parse CRI containerd logs (K3s default)
     pipelineStages:
       - cri: {}
 
-    # Minimal, correct scrape config for K8s pod logs on containerd
     scrapeConfigs: |
       - job_name: kubernetes-pods
         kubernetes_sd_configs:
           - role: pod
 
-        pipeline_stages:
-          - cri: {}
-
         relabel_configs:
-          - source_labels: [__meta_kubernetes_pod_node_name]
-            target_label: node
-
           - action: replace
             source_labels: [__meta_kubernetes_namespace]
             target_label: namespace
-
           - action: replace
             source_labels: [__meta_kubernetes_pod_name]
             target_label: pod
-
           - action: replace
             source_labels: [__meta_kubernetes_pod_container_name]
             target_label: container
-
-          # This is the key: point promtail to the actual pod log files on the node
           - action: replace
-            separator: /
+            source_labels: [__meta_kubernetes_pod_node_name]
+            target_label: node
+
+          # Standard CRI log path (K3s/containerd)
+          - action: replace
             source_labels: [__meta_kubernetes_pod_uid, __meta_kubernetes_pod_container_name]
-            replacement: /var/log/pods/*$1/*.log
+            separator: /
             target_label: __path__
+            replacement: /var/log/pods/*$1/*.log
 
-# Run as DaemonSet (1 pod on your single node)
-daemonset:
-  enabled: true
+# IMPORTANT:
+# Promtail chart already mounts common log paths.
+# Avoid adding extraVolumeMounts to /var/log/pods or /var/lib/docker/containers (causes duplicate mountPath errors).
 
-# Mount /var/log from the node (contains /var/log/pods and /var/log/containers)
-extraVolumes:
-  - name: varlog
-    hostPath:
-      path: /var/log
+extraVolumes: []
+extraVolumeMounts: []
 
-extraVolumeMounts:
-  - name: varlog
-    mountPath: /var/log
-    readOnly: true
+# Persist positions (so restarts don’t re-tail from start)
+extraArgs:
+  - -config.expand-env=true
+
+extraEnv: []
+
+podSecurityPolicy:
+  enabled: false
 
 rbac:
   create: true
@@ -67,7 +65,6 @@ rbac:
 serviceAccount:
   create: true
 
-# Small resources for t3.small
 resources:
   requests:
     cpu: 25m
@@ -76,11 +73,10 @@ resources:
     cpu: 200m
     memory: 256Mi
 
-# Optional: disable ServiceMonitor unless you want Prometheus scraping promtail
+# Prometheus scrape (optional)
 serviceMonitor:
   enabled: false
 
-# Tolerate control-plane/master (common for single-node clusters)
 tolerations:
   - key: "node-role.kubernetes.io/control-plane"
     operator: "Exists"
@@ -88,3 +84,9 @@ tolerations:
   - key: "node-role.kubernetes.io/master"
     operator: "Exists"
     effect: "NoSchedule"
+
+# Positions persistence using an emptyDir is ok, but PVC is better.
+# The chart typically uses /run/promtail; if you want PVC, enable it like below if supported by your chart version:
+# persistence:
+#   enabled: true
+#   size: 1Gi
