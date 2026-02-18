@@ -1,0 +1,47 @@
+# Loki (lightweight, single-node) for K3s on small instances
+# - SingleBinary mode (simple)
+# - No persistence for now (easy + low resource); we can enable later
+# - Disable heavy/HA components
+
+loki:
+  auth_enabled: false
+
+deploymentMode: SingleBinary
+
+singleBinary:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 50m
+      memory: 256Mi
+    limits:
+      cpu: 400m
+      memory: 768Mi
+
+# No persistence (for now). Turn on later once stable.
+# singleBinary.persistence:
+#   enabled: true
+#   size: 10Gi
+
+# Avoid deploying extra microservices
+read:
+  replicas: 0
+write:
+  replicas: 0
+backend:
+  replicas: 0
+
+# Loki service is internal-only; Grafana will access it inside the cluster
+service:
+  type: ClusterIP
+
+# Keep it simple
+gateway:
+  enabled: false
+
+# Disable monitoring rules/service monitors for now (we can enable later)
+monitoring:
+  serviceMonitor:
+    enabled: false
+  rules:
+    enabled: false
