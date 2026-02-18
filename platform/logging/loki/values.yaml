@@ -51,11 +51,11 @@ singleBinary:
 
   resources:
     requests:
-      cpu: 100m
-      memory: 512Mi
+      cpu: 50m
+      memory: 256Mi
     limits:
-      cpu: 600m
-      memory: 1500Mi
+      cpu: 400m
+      memory: 768Mi
 
 # Don’t deploy distributed mode parts
 read:
