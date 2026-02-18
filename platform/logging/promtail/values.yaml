@@ -18,23 +18,6 @@ config:
 daemonset:
   enabled: true
 
-# Where container logs live (K3s/containerd uses /var/log/pods)
-extraVolumes:
-  - name: varlogpods
-    hostPath:
-      path: /var/log/pods
-  - name: varlibdockercontainers
-    hostPath:
-      path: /var/lib/docker/containers
-
-extraVolumeMounts:
-  - name: varlogpods
-    mountPath: /var/log/pods
-    readOnly: true
-  - name: varlibdockercontainers
-    mountPath: /var/lib/docker/containers
-    readOnly: true
-
 # Promtail needs to read pod logs
 podSecurityPolicy:
   enabled: false
