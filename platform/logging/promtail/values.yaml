@@ -1,0 +1,67 @@
+# Promtail for K3s single-node
+# Ships /var/log/pods logs to Loki service inside the cluster.
+
+config:
+  clients:
+    - url: http://loki.monitoring.svc.cluster.local:3100/loki/api/v1/push
+
+  snippets:
+    # Add useful k8s labels automatically
+    pipelineStages:
+      - cri: {}
+    common:
+      - action: replace
+        source_labels: [__meta_kubernetes_pod_node_name]
+        target_label: node
+
+# Run as DaemonSet on every node (single node here)
+daemonset:
+  enabled: true
+
+# Where container logs live (K3s/containerd uses /var/log/pods)
+extraVolumes:
+  - name: varlogpods
+    hostPath:
+      path: /var/log/pods
+  - name: varlibdockercontainers
+    hostPath:
+      path: /var/lib/docker/containers
+
+extraVolumeMounts:
+  - name: varlogpods
+    mountPath: /var/log/pods
+    readOnly: true
+  - name: varlibdockercontainers
+    mountPath: /var/lib/docker/containers
+    readOnly: true
+
+# Promtail needs to read pod logs
+podSecurityPolicy:
+  enabled: false
+
+rbac:
+  create: true
+
+serviceAccount:
+  create: true
+
+resources:
+  requests:
+    cpu: 25m
+    memory: 64Mi
+  limits:
+    cpu: 200m
+    memory: 256Mi
+
+# Expose metrics for Prometheus (optional)
+serviceMonitor:
+  enabled: false
+
+# Tolerate control-plane/master (important for single-node clusters sometimes)
+tolerations:
+  - key: "node-role.kubernetes.io/control-plane"
+    operator: "Exists"
+    effect: "NoSchedule"
+  - key: "node-role.kubernetes.io/master"
+    operator: "Exists"
+    effect: "NoSchedule"
