@@ -50,6 +50,9 @@ write:
 backend:
   replicas: 0
 
+test:
+  enabled: false
+
 # Loki service is internal-only; Grafana will access it inside the cluster
 service:
   type: ClusterIP
