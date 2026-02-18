@@ -1,13 +1,6 @@
-# Promtail (production-ish) for K3s/containerd
-# - DaemonSet (1 per node)
-# - Tails CRI logs from /var/log/pods + /var/log/containers (mounted by chart by default)
-# - Persists positions via hostPath (so restarts don’t resend logs)
-# - Ships to Loki inside cluster
-
 daemonset:
   enabled: true
 
-# Keep resource usage sane for t3.small
 resources:
   requests:
     cpu: 25m
@@ -18,7 +11,6 @@ resources:
 
 rbac:
   create: true
-
 serviceAccount:
   create: true
 
@@ -33,11 +25,7 @@ tolerations:
     operator: "Exists"
     effect: "NoSchedule"
 
-# IMPORTANT:
-# Promtail chart already mounts the common log paths.
-# DO NOT mount /var/log/pods or /var/lib/docker/containers via extraVolumeMounts (duplicate mountPath errors).
 extraVolumes:
-  # Persist positions on the host so a pod restart doesn't resend logs
   - name: promtail-positions
     hostPath:
       path: /var/lib/promtail
@@ -51,14 +39,11 @@ extraArgs:
   - -config.expand-env=true
 
 config:
-  # Promtail HTTP server
-  serverPort: 3101
   logLevel: info
   logFormat: logfmt
 
   clients:
     - url: http://loki.monitoring.svc.cluster.local:3100/loki/api/v1/push
-      # Good defaults for reliability on small nodes
       batchwait: 1s
       batchsize: 1048576
       backoff_config:
@@ -72,25 +57,17 @@ config:
 
   snippets:
     pipelineStages:
-      # Parse CRI log format (containerd/K3s)
       - cri: {}
-
-      # Optional: reduce noise (uncomment if you want)
-      # - drop:
-      #     expression: ".*(kube-probe|healthz|metrics).*"
 
     scrapeConfigs: |
       - job_name: kubernetes-pods
         kubernetes_sd_configs:
           - role: pod
-
-        # Only scrape running pods
         relabel_configs:
           - action: keep
             source_labels: [__meta_kubernetes_pod_phase]
             regex: Running
 
-          # Attach useful labels
           - action: replace
             source_labels: [__meta_kubernetes_namespace]
             target_label: namespace
@@ -104,13 +81,6 @@ config:
             source_labels: [__meta_kubernetes_pod_node_name]
             target_label: node
 
-          # Drop very noisy namespaces if you want (optional)
-          # - action: drop
-          #   source_labels: [__meta_kubernetes_namespace]
-          #   regex: "(kube-system|kube-public|argocd)"
-
-          # CRI log path for pods on K3s/containerd
-          # This builds: /var/log/pods/*<pod_uid>/<container_name>/*.log
           - action: replace
             source_labels: [__meta_kubernetes_pod_uid, __meta_kubernetes_pod_container_name]
             separator: /

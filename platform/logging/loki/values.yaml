@@ -1,10 +1,3 @@
-# Loki - production-ish defaults for single-node K3s
-# - SingleBinary
-# - filesystem storage (local disk)
-# - persistence ON
-# - retention ON (via compactor)
-# - memcached caches OFF (too heavy for small nodes)
-
 deploymentMode: SingleBinary
 
 loki:
@@ -26,17 +19,15 @@ loki:
           prefix: loki_index_
           period: 24h
 
-  # Keep Loki stable on small nodes
   limits_config:
-    retention_period: 168h              # 7 days
-    ingestion_rate_mb: 4                # per-tenant rate limit
+    retention_period: 168h
+    ingestion_rate_mb: 4
     ingestion_burst_size_mb: 8
     max_streams_per_user: 2000
     max_global_streams_per_user: 5000
     reject_old_samples: true
     reject_old_samples_max_age: 168h
 
-  # Required for retention on filesystem
   compactor:
     retention_enabled: true
     delete_request_store: filesystem
@@ -44,9 +35,10 @@ loki:
 
 singleBinary:
   replicas: 1
-
   persistence:
     enabled: true
+    # storageClassName: local-path   # <- use this on many K3s clusters, OR just remove the field
+    accessMode: ReadWriteOnce
     size: 10Gi
 
   resources:
@@ -57,7 +49,6 @@ singleBinary:
       cpu: 400m
       memory: 768Mi
 
-# Don’t deploy distributed mode parts
 read:
   replicas: 0
 write:
@@ -71,14 +62,11 @@ service:
 gateway:
   enabled: false
 
-# Disable caches (these create memcached StatefulSets)
 chunksCache:
   enabled: false
 resultsCache:
   enabled: false
 
-# Canary: keep enabled to satisfy chart validation OR skip helm tests in Argo (see step 2)
-# If you keep it enabled, it's tiny and safe.
 lokiCanary:
   enabled: true
 
