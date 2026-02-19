@@ -1,30 +1,26 @@
-# Development Environment
+# Development Environment (`dev`)
 
 ## Purpose
 
-The `dev` environment is used for testing, experimentation, and validation of new changes before promoting them to production.
-
-It runs inside the same K3s cluster but is isolated using a dedicated Kubernetes namespace.
-
----
+The `dev` environment is used for testing and validation before production changes.
+It runs in the same K3s cluster as prod but is isolated by namespace.
 
 ## Characteristics
 
-- Single replica workloads
-- Lower CPU and memory requests
-- Reduced alert severity
-- Development domain (e.g., dev.example.com)
-
----
+- Namespace: `dev`
+- Faster iteration with lower blast radius
+- Lower resource profile than production
+- HTTPS ingress and certificate flow can be validated safely
 
 ## Deployment Model
 
-This environment will be managed by Argo CD using a separate Application definition.
+`dev` is GitOps-managed by Argo CD.
+Environment separation strategy is documented in `docs/environment-strategy.md`.
 
-Environment-specific configuration (replicas, resources, domain) will override the base manifests.
+## Operational Checks
 
----
-
-## Goal
-
-The development environment allows safe iteration while maintaining a structure similar to production.
+```bash
+kubectl get pods -n dev
+kubectl get ingress -n dev
+kubectl get certificate -n dev
+```

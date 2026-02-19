@@ -2,6 +2,17 @@
 
 Production-style Kubernetes platform running on AWS EC2 with K3s, fully managed through GitOps with Argo CD.
 
+## Quick Navigation
+
+- Architecture: `docs/architecture.md`
+- Platform standards: `docs/platform-standards.md`
+- Environment strategy: `docs/environment-strategy.md`
+- Ingress/TLS notes: `docs/ingress-and-tls.md`
+- Incident report: `docs/ingress-controller-conflict-and-recovery.md`
+- Infra provisioning guide: `infra/terraform/aws-k3s/README.md`
+- Dev environment guide: `envs/dev/README.md`
+- Prod environment guide: `envs/prod/README.md`
+
 ## Why This Project
 
 This repository demonstrates how to build and operate a realistic DevOps/SRE platform with:
@@ -38,18 +49,37 @@ Architecture details: `docs/architecture.md`
 - Promtail Helm chart `6.16.6`
 - cert-manager ClusterIssuers (staging + prod)
 
+## Argo CD Managed Apps
+
+- `argocd-config`
+- `argocd-ingress`
+- `cert-manager-config`
+- `echo`
+- `ingress-nginx`
+- `kube-prometheus-stack`
+- `loki`
+- `monitoring-ingress`
+- `promtail`
+
 ## Repository Structure
 
 ```text
 .
 ├── apps/                  # Workload manifests (example app)
 ├── docs/                  # Architecture, standards, incident write-ups, screenshots
-├── envs/                  # Environment strategy docs
-├── infra/terraform/       # AWS infrastructure provisioning
+├── envs/                  # Environment-specific documentation/overlays
+├── infra/terraform/       # AWS infrastructure provisioning code
 └── platform/              # GitOps-managed platform services and config
 ```
 
-## Bootstrap Flow (Current)
+## Prerequisites
+
+- AWS account and credentials configured locally
+- Terraform `>= 1.5.0`
+- `kubectl`, `helm`, and `argocd` CLI
+- A domain with DNS records pointed to your EC2 public IP
+
+## Bootstrap Flow
 
 1. Provision EC2 infrastructure:
    `infra/terraform/aws-k3s`
@@ -58,6 +88,13 @@ Architecture details: `docs/architecture.md`
 4. Bootstrap root application:
    `kubectl apply -n argocd -f platform/argocd/apps/root-app.yaml`
 5. Argo CD reconciles platform and app manifests from this repo.
+
+## Proof Checklist
+
+- Argo CD: applications are `Synced` and `Healthy`
+- Ingress: external routes resolve and serve expected services
+- cert-manager: certificates are issued and renewed
+- Grafana: cluster metrics and logs are visible
 
 ## Platform Proof (Screenshots)
 
@@ -83,6 +120,9 @@ Architecture details: `docs/architecture.md`
 ## Useful Verification Commands
 
 ```bash
+# Show timestamp in proof capture
+date -u
+
 # Cluster state
 kubectl get nodes -o wide
 kubectl get pods -A
@@ -98,14 +138,6 @@ echo | openssl s_client -connect echo.yared.site:443 -servername echo.yared.site
 curl -I https://echo.yared.site
 ```
 
-## Key Documentation
-
-- Architecture: `docs/architecture.md`
-- Platform standards: `docs/platform-standards.md`
-- Environment strategy: `docs/environment-strategy.md`
-- Ingress + TLS notes: `docs/ingress-and-tls.md`
-- Incident report: `docs/ingress-controller-conflict-and-recovery.md`
-
 ## Current Trade-offs
 
 - Single-node cluster (cost-efficient, not HA)
@@ -114,8 +146,7 @@ curl -I https://echo.yared.site
 
 ## Roadmap
 
-- Add CI checks (YAML lint + Terraform validate + schema checks)
+- Add CI checks (`yamllint`, `terraform validate`, schema checks)
 - Fully GitOps-manage cert-manager installation (not only issuer config)
-- Add environment-specific overlays for dev/prod workloads
+- Implement environment-specific overlays for dev/prod workloads
 - Add policy and security hardening resources under `platform/security`
-

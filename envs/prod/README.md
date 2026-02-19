@@ -1,31 +1,28 @@
-# Production Environment
+# Production Environment (`prod`)
 
 ## Purpose
 
-The `prod` environment represents the live, user-facing system.
-
-It runs inside the same K3s cluster but is isolated using a dedicated Kubernetes namespace.
-
----
+The `prod` environment is for live, user-facing workloads.
+It is isolated in the `prod` namespace and reconciled through GitOps.
 
 ## Characteristics
 
-- Multiple replicas for availability
-- Production-grade resource requests and limits
-- Strict alerting configuration
-- Public domain (e.g., app.example.com)
-- HTTPS enforced via cert-manager and Let’s Encrypt
-
----
+- Namespace: `prod`
+- Higher stability and reliability expectations than `dev`
+- Production-grade resource planning and scaling posture
+- HTTPS enforced with cert-manager + Let's Encrypt
+- Stricter monitoring and incident response expectations
 
 ## Deployment Model
 
-This environment is managed by Argo CD using a dedicated Application definition.
+Production changes must be committed to Git and applied by Argo CD.
+Environment strategy and planned overlay model are documented in
+`docs/environment-strategy.md`.
 
-Configuration overrides (replicas, resources, domains, scaling) are applied through environment-specific overlays.
+## Operational Checks
 
----
-
-## Goal
-
-The production environment prioritizes stability, reliability, and observability.
+```bash
+kubectl get pods -n prod
+kubectl get ingress -n prod
+kubectl get events -n prod --sort-by=.lastTimestamp
+```
